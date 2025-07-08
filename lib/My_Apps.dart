@@ -31,7 +31,6 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
 
       List<SocialApp> loadedApps = [];
 
-      // Try loading from new format first
       if (savedAppData.isNotEmpty) {
         loadedApps = savedAppData.map((jsonStr) {
           final data = jsonDecode(jsonStr);
@@ -44,7 +43,6 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
         }).toList();
       }
 
-      // Fallback to old format if new format is empty
       if (loadedApps.isEmpty) {
         final savedAppNames = prefs.getStringList('selected_apps') ?? [];
         loadedApps = allSocialApps.where((app) => savedAppNames.contains(app.name)).toList();
@@ -230,62 +228,92 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
     );
   }
 
+  Widget _buildBackground() {
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(1.3, -1.0),
+              radius: 1.5,
+              colors: [Color(0xAAAD1457), Colors.transparent],
+              stops: [0.1, 1.0],
+            ),
+          ),
+        ),
+        Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(-1.3, 1.0),
+              radius: 1.5,
+              colors: [Color(0xAA1A237E), Colors.transparent],
+              stops: [0.1, 1.0],
+            ),
+          ),
+        ),
+        Center(
+          child: Transform.rotate(
+            angle: 0.5,
+            child: Container(
+              width: 300,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.6),
+                    blurRadius: 60,
+                    spreadRadius: 40,
+                    offset: const Offset(40, 40),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context, _currentApps),
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'My Apps',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Gradient overlays (same as SettingsScreen)
-          Container(
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(1.3, -1.0),
-                radius: 1.5,
-                colors: [Color(0xAAAD1457), Colors.transparent],
-                stops: [0.1, 1.0],
-              ),
-            ),
-          ),
-          Container(
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(-1.3, 1.0),
-                radius: 1.5,
-                colors: [Color(0xAA1A237E), Colors.transparent],
-                stops: [0.1, 1.0],
-              ),
-            ),
-          ),
-
-          // Main content
+          _buildBackground(),
           SafeArea(
             child: Column(
               children: [
-                // App Bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context, _currentApps),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'My Apps',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildHeader(context),
                 const SizedBox(height: 8),
-
-                // Content
                 Expanded(
                   child: _isLoading
                       ? _buildLoadingState()
