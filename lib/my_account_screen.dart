@@ -16,7 +16,6 @@ class MyAccountScreen extends StatefulWidget {
 class _MyAccountScreenState extends State<MyAccountScreen> {
   String name = '';
   String email = '';
-  String password = '';
   bool isLoading = true;
 
   @override
@@ -26,26 +25,28 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   }
 
   Future<void> fetchUserInfo() async {
+    setState(() => isLoading = true);
     final userId = UserSession.userId;
     if (userId == null) return;
 
     try {
-      final url = Uri.parse('$baseUrl/users/$userId');  // Changed from 'user' to 'users' // 👈 also make sure your route matches this
+      final url = Uri.parse('$baseUrl/users/$userId');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final userData = jsonDecode(response.body);
         setState(() {
-          name = userData['fullName'] ?? 'N/A'; // ✅ fix here
+          name = userData['fullName'] ?? 'N/A';
           email = userData['email'] ?? 'N/A';
-          password = '********'; // 🔐 don't show actual password
           isLoading = false;
         });
       } else {
         print("Failed to load user: ${response.body}");
+        setState(() => isLoading = false);
       }
     } catch (e) {
       print("Error fetching user info: $e");
+      setState(() => isLoading = false);
     }
   }
 
@@ -71,7 +72,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 const Divider(color: Colors.white24, thickness: 1, indent: 20, endIndent: 20),
                 _InfoRow(label: "Email Address", value: email),
                 const Divider(color: Colors.white24, thickness: 1, indent: 20, endIndent: 20),
-                _InfoRow(label: "Password", value: password),
+                _InfoRow(label: "Password", value: "********"),
                 const Divider(color: Colors.white24, thickness: 1, indent: 20, endIndent: 20),
                 const Spacer(),
               ],
@@ -82,11 +83,17 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: GestureDetector(
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            // Navigate to EditAccountScreen and wait for result
+            final result = await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) =>  EditAccountScreen()),
+              MaterialPageRoute(builder: (context) => const EditAccountScreen()),
             );
+
+            // If we got a result (means update happened), refresh data
+            if (result != null && result['updated'] == true) {
+              await fetchUserInfo();
+            }
           },
           child: Container(
             height: 50,

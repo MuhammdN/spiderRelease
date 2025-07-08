@@ -15,6 +15,9 @@ import 'login_screen.dart';
 import 'app_data.dart';
 import 'social_app_screen.dart';
 import 'dart:io';
+import 'package:http/http.dart' as http;
+
+const String baseUrl = 'https://my-backend-production-d82c.up.railway.app';
 
 // Session state management class
 class SessionState {
@@ -37,12 +40,50 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _rotateAnimation;
+  String? userName;
+  bool isLoadingName = true;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _loadSelectedApps();
+    _fetchUserName();
+  }
+
+  Future<void> _fetchUserName() async {
+    final userId = UserSession.userId;
+    if (userId == null) {
+      setState(() {
+        isLoadingName = false;
+      });
+      return;
+    }
+
+    try {
+      final url = Uri.parse('$baseUrl/users/$userId');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          userName = data['fullName'];
+          // Update the session data using the proper method
+          UserSession.setUserData(
+              UserSession.userId ?? '', // Keep existing userId
+              data['fullName'] ?? '',  // New name
+              UserSession.userEmail ?? '' // Keep existing email
+          );
+          isLoadingName = false;
+        });
+      } else {
+        debugPrint('Failed to load user: ${response.body}');
+        setState(() => isLoadingName = false);
+      }
+    } catch (e) {
+      debugPrint('Error fetching user name: $e');
+      setState(() => isLoadingName = false);
+    }
   }
 
   void _initializeAnimations() {
@@ -153,10 +194,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Future<bool> _authenticateUser(String email, String password) async {
-    // Check if the provided credentials match the logged-in user
     if (UserSession.userEmail == email &&
         password.isNotEmpty &&
-        password.length >= 6) { // Basic password check
+        password.length >= 6) {
       SessionState.isAuthenticated = true;
       return true;
     }
@@ -164,7 +204,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Future<bool> _showLoginDialog(BuildContext context, String appName) async {
-    // Check if already authenticated in this session
     if (SessionState.isAuthenticated) {
       return true;
     }
@@ -202,7 +241,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Modified title row with flexible text
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -213,15 +251,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
-                        maxLines: 2, // Allow text to wrap to second line if needed
-                        overflow: TextOverflow.ellipsis, // Show ellipsis if still too long
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.of(context).pop(false),
-                      padding: EdgeInsets.zero, // Remove extra padding
-                      constraints: const BoxConstraints(), // Allow icon to be closer to text
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),
@@ -249,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 14),
                   ),
-                  readOnly: true, // Make email read-only since it's the logged-in user
+                  readOnly: true,
                 ),
                 const SizedBox(height: 16),
 
@@ -341,7 +379,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Future<void> _launchApp(SocialApp app) async {
     if (Platform.isIOS) {
-      // Try to launch using URL scheme
       if (app.launchUrls != null) {
         for (final url in app.launchUrls!) {
           if (await canLaunchUrl(Uri.parse(url))) {
@@ -350,7 +387,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           }
         }
       }
-      // If not installed, open App Store or fallbackUrl
       if (app.fallbackUrl != null) {
         await launchUrl(Uri.parse(app.fallbackUrl!), mode: LaunchMode.externalApplication);
       } else {
@@ -360,7 +396,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       }
       return;
     }
-    // Android logic (unchanged)
     try {
       final bool? launched = await InstalledApps.startApp(app.packageName);
       if (launched == null || launched == false) {
@@ -480,10 +515,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Welcome, ${UserSession.userName ?? "User"}',
-                    style: const TextStyle(fontSize: 22, color: Colors.white70),
-                  ),
+                  if (isLoadingName)
+                    const SizedBox(
+                      width: 150,
+                      height: 24,
+                      child: LinearProgressIndicator(
+                        color: Colors.white70,
+                        backgroundColor: Colors.transparent,
+                      ),
+                    )
+                  else
+                    Text(
+                      UserSession.userName != null
+                          ? 'Welcome, ${UserSession.userName}!'
+                          : 'Welcome to Digital Web',
+                      style: const TextStyle(fontSize: 22, color: Colors.white70),
+                    ),
                   Text(
                     'Digital web is ready',
                     style: TextStyle(
@@ -511,7 +558,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ],
     );
   }
-
   Widget _buildSpiderWithApps() {
     return Center(
       child: SizedBox(
@@ -661,7 +707,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                 ],
               ),
-              child: Center(child: Platform.isIOS ?  Icon(app.icon): Image.memory(app.icon)),
+              child: Center(child: Platform.isIOS ? Icon(app.icon) : Image.memory(app.icon)),
             ),
           ),
         ),

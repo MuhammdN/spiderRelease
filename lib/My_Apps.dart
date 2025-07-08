@@ -233,60 +233,75 @@ class _MyAppsScreenState extends State<MyAppsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).primaryColor.withOpacity(0.8),
-              Theme.of(context).primaryColorDark.withOpacity(0.9),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // App Bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context, _currentApps),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'My Apps',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Gradient overlays (same as SettingsScreen)
+          Container(
+            decoration: const BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(1.3, -1.0),
+                radius: 1.5,
+                colors: [Color(0xAAAD1457), Colors.transparent],
+                stops: [0.1, 1.0],
               ),
-              const SizedBox(height: 8),
+            ),
+          ),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(-1.3, 1.0),
+                radius: 1.5,
+                colors: [Color(0xAA1A237E), Colors.transparent],
+                stops: [0.1, 1.0],
+              ),
+            ),
+          ),
 
-              // Content
-              Expanded(
-                child: _isLoading
-                    ? _buildLoadingState()
-                    : _currentApps.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                  padding: const EdgeInsets.only(top: 8, bottom: 20),
-                  itemCount: _currentApps.length,
-                  itemBuilder: (context, index) =>
-                      _buildAppItem(_currentApps[index], index),
+          // Main content
+          SafeArea(
+            child: Column(
+              children: [
+                // App Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.pop(context, _currentApps),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'My Apps',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+
+                // Content
+                Expanded(
+                  child: _isLoading
+                      ? _buildLoadingState()
+                      : _currentApps.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                    padding: const EdgeInsets.only(top: 8, bottom: 20),
+                    itemCount: _currentApps.length,
+                    itemBuilder: (context, index) =>
+                        _buildAppItem(_currentApps[index], index),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
