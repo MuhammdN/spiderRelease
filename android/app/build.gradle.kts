@@ -61,6 +61,9 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            ndk {
+                debugSymbolLevel = "none"
+            }
             signingConfig = signingConfigs.getByName("release") // ✅ Use your real key here
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
